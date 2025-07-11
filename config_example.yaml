@@ -1,0 +1,54 @@
+databases:
+  # Option 1: Use connection string (existing format)
+  chinook_string:
+    type: sqlite
+    connection_string: "sqlite:///tests/Chinook_Sqlite.sqlite"
+    description: "Chinook sample SQLite database"
+
+  # Option 2: Use individual fields (new format)
+  my_postgres:
+    type: postgresql
+    description: "PostgreSQL database with individual fields"
+    host: localhost
+    port: 5432
+    database: mydb
+    username: myuser
+    password: mypassword
+    extra_params:
+      sslmode: require
+      connect_timeout: "10"
+
+  my_mysql:
+    type: mysql
+    description: "MySQL database"
+    host: db.example.com
+    port: 3306
+    database: analytics
+    username: readonly_user
+    password: secure_password
+
+  memory_sqlite:
+    type: sqlite
+    description: "In-memory SQLite for testing"
+    database: ":memory:"
+
+  snowflake_example:
+    type: snowflake
+    description: "Snowflake data warehouse"
+    host: "myaccount.snowflakecomputing.com"
+    port: 443
+    database: "PROD_DWH"
+    username: "myuser@example.com"
+    password: "mypassword"
+    account: "myaccount"
+    extra_params:
+      warehouse: "COMPUTE_WH"
+      schema: "PUBLIC"
+      authenticator: "externalbrowser"
+
+# Global settings
+settings:
+  max_query_timeout: 30
+  max_rows_per_query: 500
+  sample_size: 10
+  enable_write_operations: false

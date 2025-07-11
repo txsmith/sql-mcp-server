@@ -1,0 +1,41 @@
+[project]
+name = "sql-mcp-server"
+version = "0.1.0"
+description = "A FastMCP server for exploring multiple databases"
+requires-python = ">=3.13"
+authors = [
+    { name = "Thomas Smith", email = "thomas@apolloagriculture.com" },
+]
+
+dependencies = [
+    "fastmcp>=2.10.5",
+    "sqlalchemy>=2.0.0",
+    "psycopg2-binary>=2.9.0",
+    "pymysql>=1.1.0",
+    "pyodbc>=4.0.39",
+    "snowflake-sqlalchemy>=1.4.0",
+    "pyyaml>=6.0",
+    "pydantic>=2.0.0",
+]
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "flake8>=6.0.0",
+    "black>=25.1.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
