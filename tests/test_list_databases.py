@@ -43,8 +43,7 @@ def test_list_databases_includes_correct_database_info(db_manager):
     """Test that each database entry has correct structure and info"""
     result = list_databases(db_manager)
 
-    sqlite_db = next(
-        (db for db in result if db["name"] == "test_sqlite"), None)
+    sqlite_db = next((db for db in result if db["name"] == "test_sqlite"), None)
     assert sqlite_db is not None
 
     # Check structure

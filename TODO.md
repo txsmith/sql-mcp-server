@@ -18,13 +18,3 @@
     - `describe_table()` - for tables with many columns/foreign keys
   - Consider default page sizes and max limits per tool
 
-- [ ] **Optimize output format for token efficiency (human-readable)**
-  - FastMCP currently returns JSON, which is verbose for tabular data
-  - Explore more compact human-readable formats:
-    - **CSV/TSV** - for tabular query results and table samples
-    - **Markdown tables** - structured but readable
-    - **YAML** - often more compact than JSON for nested data
-    - **Custom delimited formats** - pipe-separated or similar
-    - **Condensed JSON** - remove whitespace, shorter field names
-  - Could significantly reduce token usage for database results
-  - Must remain human-readable for Claude to process

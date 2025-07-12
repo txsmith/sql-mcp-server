@@ -9,7 +9,7 @@ from .common import ErrorResponse
 
 
 class SchemaInfo(BaseModel):
-    schema_name: str
+    db_schema: str
     tables: List[str]
     table_count: int
 
@@ -35,7 +35,7 @@ def list_tables(
         if schema:
             tables = inspector.get_table_names(schema=schema)
             schemas.append(
-                SchemaInfo(schema_name=schema, tables=tables, table_count=len(tables))
+                SchemaInfo(db_schema=schema, tables=tables, table_count=len(tables))
             )
         else:
             available_schemas = inspector.get_schema_names()
@@ -45,7 +45,7 @@ def list_tables(
                 if schema_tables:
                     schemas.append(
                         SchemaInfo(
-                            schema_name=schema_name or "default",
+                            db_schema=schema_name or "default",
                             tables=schema_tables,
                             table_count=len(schema_tables),
                         )

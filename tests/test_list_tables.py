@@ -87,7 +87,7 @@ def test_list_tables_with_specific_schema(db_manager):
 
     assert isinstance(result, TablesResponse)
     assert len(result.schemas) == 1
-    assert result.schemas[0].schema_name == "main"
+    assert result.schemas[0].db_schema == "main"
     assert len(result.schemas[0].tables) > 0
     assert result.schemas[0].table_count == len(result.schemas[0].tables)
 
