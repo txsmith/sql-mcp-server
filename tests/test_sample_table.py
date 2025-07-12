@@ -10,7 +10,7 @@ from tools.sample_table import sample_table, SampleResponse, ErrorResponse
 @pytest.fixture
 def db_manager():
     """Fixture to provide database manager for tests"""
-    config_path = os.path.join(os.path.dirname(__file__), 'test_config.yaml')
+    config_path = os.path.join(os.path.dirname(__file__), "test_config.yaml")
     config = load_config(config_path)
     return DatabaseManager(config)
 
@@ -96,9 +96,23 @@ def test_sample_table_employee_structure(db_manager):
     assert result.table == "Employee"
     assert result.row_count <= 2
 
-    expected_columns = ["EmployeeId", "LastName", "FirstName", "Title", "ReportsTo",
-                        "BirthDate", "HireDate", "Address", "City", "State",
-                        "Country", "PostalCode", "Phone", "Fax", "Email"]
+    expected_columns = [
+        "EmployeeId",
+        "LastName",
+        "FirstName",
+        "Title",
+        "ReportsTo",
+        "BirthDate",
+        "HireDate",
+        "Address",
+        "City",
+        "State",
+        "Country",
+        "PostalCode",
+        "Phone",
+        "Fax",
+        "Email",
+    ]
 
     for col in expected_columns:
         assert col in result.columns

@@ -7,9 +7,9 @@ from .describe_table import describe_table
 from .list_tables import list_tables
 
 __all__ = [
-    'list_databases',
-    'execute_query', 
-    'sample_table',
-    'describe_table',
-    'list_tables'
+    "list_databases",
+    "execute_query",
+    "sample_table",
+    "describe_table",
+    "list_tables",
 ]

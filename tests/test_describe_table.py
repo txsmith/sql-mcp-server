@@ -9,7 +9,7 @@ from tools.describe_table import describe_table, TableDescription, ErrorResponse
 
 @pytest.fixture
 def db_manager():
-    config_path = os.path.join(os.path.dirname(__file__), 'test_config.yaml')
+    config_path = os.path.join(os.path.dirname(__file__), "test_config.yaml")
     config = load_config(config_path)
     return DatabaseManager(config)
 
@@ -49,7 +49,8 @@ def test_describe_table_artist_incoming_fks(db_manager):
     assert len(result.incoming_foreign_keys) >= 1
 
     album_fk = next(
-        (fk for fk in result.incoming_foreign_keys if fk.from_table == "Album"), None)
+        (fk for fk in result.incoming_foreign_keys if fk.from_table == "Album"), None
+    )
     assert album_fk is not None
     assert album_fk.from_columns == ["ArtistId"]
     assert album_fk.to_columns == ["ArtistId"]
@@ -65,7 +66,8 @@ def test_describe_table_customer_multiple_incoming_fks(db_manager):
     assert len(result.incoming_foreign_keys) >= 1
 
     invoice_fk = next(
-        (fk for fk in result.incoming_foreign_keys if fk.from_table == "Invoice"), None)
+        (fk for fk in result.incoming_foreign_keys if fk.from_table == "Invoice"), None
+    )
     assert invoice_fk is not None
     assert invoice_fk.from_columns == ["CustomerId"]
     assert invoice_fk.to_columns == ["CustomerId"]
@@ -101,10 +103,8 @@ def test_describe_table_column_types_and_nullability(db_manager):
 
     assert isinstance(result, TableDescription)
 
-    track_id_col = next(
-        (col for col in result.columns if col.name == "TrackId"), None)
-    name_col = next(
-        (col for col in result.columns if col.name == "Name"), None)
+    track_id_col = next((col for col in result.columns if col.name == "TrackId"), None)
+    name_col = next((col for col in result.columns if col.name == "Name"), None)
 
     assert track_id_col is not None
     assert name_col is not None

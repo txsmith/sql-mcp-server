@@ -5,6 +5,7 @@ from sqlalchemy import inspect
 from sqlalchemy.exc import SQLAlchemyError
 from pydantic import BaseModel
 from database_manager import DatabaseManager
+from .common import ErrorResponse
 
 
 class SchemaInfo(BaseModel):
@@ -16,10 +17,6 @@ class SchemaInfo(BaseModel):
 class TablesResponse(BaseModel):
     database: str
     schemas: List[SchemaInfo]
-
-
-class ErrorResponse(BaseModel):
-    error: str
 
 
 def list_tables(
@@ -37,27 +34,24 @@ def list_tables(
 
         if schema:
             tables = inspector.get_table_names(schema=schema)
-            schemas.append(SchemaInfo(
-                schema_name=schema,
-                tables=tables,
-                table_count=len(tables)
-            ))
+            schemas.append(
+                SchemaInfo(schema_name=schema, tables=tables, table_count=len(tables))
+            )
         else:
             available_schemas = inspector.get_schema_names()
 
             for schema_name in available_schemas:
                 schema_tables = inspector.get_table_names(schema=schema_name)
                 if schema_tables:
-                    schemas.append(SchemaInfo(
-                        schema_name=schema_name or 'default',
-                        tables=schema_tables,
-                        table_count=len(schema_tables)
-                    ))
+                    schemas.append(
+                        SchemaInfo(
+                            schema_name=schema_name or "default",
+                            tables=schema_tables,
+                            table_count=len(schema_tables),
+                        )
+                    )
 
-        return TablesResponse(
-            database=database,
-            schemas=schemas
-        )
+        return TablesResponse(database=database, schemas=schemas)
 
     except SQLAlchemyError as e:
         return ErrorResponse(error=f"Failed to list tables: {str(e)}")

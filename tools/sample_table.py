@@ -5,6 +5,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from pydantic import BaseModel
 from database_manager import DatabaseManager
+from .common import ErrorResponse
 
 
 class SampleResponse(BaseModel):
@@ -12,10 +13,6 @@ class SampleResponse(BaseModel):
     columns: List[str]
     rows: List[Dict[str, Any]]
     row_count: int
-
-
-class ErrorResponse(BaseModel):
-    error: str
 
 
 def sample_table(

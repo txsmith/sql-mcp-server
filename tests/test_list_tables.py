@@ -10,7 +10,7 @@ from tools.list_tables import list_tables, TablesResponse, ErrorResponse
 @pytest.fixture
 def db_manager():
     """Fixture to provide database manager for tests"""
-    config_path = os.path.join(os.path.dirname(__file__), 'test_config.yaml')
+    config_path = os.path.join(os.path.dirname(__file__), "test_config.yaml")
     config = load_config(config_path)
     return DatabaseManager(config)
 
@@ -37,12 +37,24 @@ def test_list_tables_chinook_database(db_manager):
         total_count += schema.table_count
         assert schema.table_count == len(schema.tables)
 
-    expected_tables = ["Album", "Artist", "Customer", "Employee", "Genre",
-                       "Invoice", "InvoiceLine", "MediaType", "Playlist",
-                       "PlaylistTrack", "Track"]
+    expected_tables = [
+        "Album",
+        "Artist",
+        "Customer",
+        "Employee",
+        "Genre",
+        "Invoice",
+        "InvoiceLine",
+        "MediaType",
+        "Playlist",
+        "PlaylistTrack",
+        "Track",
+    ]
 
     for table in expected_tables:
-        assert table in all_tables, f"Expected table '{table}' not found in Chinook database"
+        assert (
+            table in all_tables
+        ), f"Expected table '{table}' not found in Chinook database"
 
 
 def test_list_tables_empty_memory_database(db_manager):
@@ -82,8 +94,7 @@ def test_list_tables_with_specific_schema(db_manager):
 
 def test_list_tables_nonexistent_schema(db_manager):
     """Test that list_tables handles non-existent schema gracefully"""
-    result = list_tables(
-        db_manager, "chinook_sqlite", schema="nonexistent_schema")
+    result = list_tables(db_manager, "chinook_sqlite", schema="nonexistent_schema")
 
     assert isinstance(result, ErrorResponse)
     result = list_tables(db_manager, "test_postgres")
@@ -103,9 +114,19 @@ def test_list_tables_connection_string_format(db_manager):
     for schema in result.schemas:
         all_tables.extend(schema.tables)
 
-    expected_tables = ["Album", "Artist", "Customer", "Employee", "Genre",
-                       "Invoice", "InvoiceLine", "MediaType", "Playlist",
-                       "PlaylistTrack", "Track"]
+    expected_tables = [
+        "Album",
+        "Artist",
+        "Customer",
+        "Employee",
+        "Genre",
+        "Invoice",
+        "InvoiceLine",
+        "MediaType",
+        "Playlist",
+        "PlaylistTrack",
+        "Track",
+    ]
 
     for table in expected_tables:
         assert table in all_tables

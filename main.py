@@ -7,9 +7,15 @@ table sampling, and structure inspection.
 
 import sys
 import os
+from typing import List, Dict, Union, Optional
 from fastmcp import FastMCP
 from database_manager import load_config, DatabaseManager
 import tools
+from tools.common import ErrorResponse
+from tools.execute_query import QueryResponse
+from tools.sample_table import SampleResponse
+from tools.describe_table import TableDescription
+from tools.list_tables import TablesResponse
 
 mcp = FastMCP("Database Explorer")
 
@@ -24,31 +30,37 @@ db_manager = DatabaseManager(config)
 
 
 @mcp.tool()
-def list_databases():
+def list_databases() -> List[Dict[str, str]]:
     """List all configured databases"""
     return tools.list_databases(db_manager)
 
 
 @mcp.tool()
-def execute_query(database: str, query: str):
+def execute_query(database: str, query: str) -> Union[QueryResponse, ErrorResponse]:
     """Execute a SELECT query on the specified database"""
     return tools.execute_query(db_manager, database, query)
 
 
 @mcp.tool()
-def sample_table(database: str, table_name: str, limit: int = None):
+def sample_table(
+    database: str, table_name: str, limit: Optional[int] = None
+) -> Union[SampleResponse, ErrorResponse]:
     """Sample rows from a table"""
     return tools.sample_table(db_manager, database, table_name, limit)
 
 
 @mcp.tool()
-def describe_table(database: str, table_name: str):
+def describe_table(
+    database: str, table_name: str
+) -> Union[TableDescription, ErrorResponse]:
     """Get table structure including columns and foreign keys"""
     return tools.describe_table(db_manager, database, table_name)
 
 
 @mcp.tool()
-def list_tables(database: str, schema: str = None):
+def list_tables(
+    database: str, schema: Optional[str] = None
+) -> Union[TablesResponse, ErrorResponse]:
     """List all tables in the specified database and optional schema"""
     return tools.list_tables(db_manager, database, schema)
 
