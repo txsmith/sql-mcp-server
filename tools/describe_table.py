@@ -36,7 +36,7 @@ class TableDescription(BaseModel):
 
 
 def describe_table(
-    db_manager: DatabaseManager, database: str, table_name: str
+    db_manager: DatabaseManager, database: str, table_name: str, db_schema: Optional[str] = None
 ) -> Union[TableDescription, ErrorResponse]:
     """Get table structure including columns and foreign keys"""
 
@@ -48,7 +48,7 @@ def describe_table(
         inspector = inspect(engine)
 
         columns = []
-        for col in inspector.get_columns(table_name):
+        for col in inspector.get_columns(table_name, schema=db_schema):
             columns.append(
                 ColumnInfo(
                     name=col["name"],
@@ -60,7 +60,7 @@ def describe_table(
             )
 
         foreign_keys = []
-        for fk in inspector.get_foreign_keys(table_name):
+        for fk in inspector.get_foreign_keys(table_name, schema=db_schema):
             foreign_keys.append(
                 ForeignKey(
                     constrained_columns=fk["constrained_columns"],
@@ -70,8 +70,9 @@ def describe_table(
             )
 
         incoming_fks = []
-        for table in inspector.get_table_names():
-            for fk in inspector.get_foreign_keys(table):
+        table_names = inspector.get_table_names(schema=db_schema)
+        for table in table_names:
+            for fk in inspector.get_foreign_keys(table, schema=db_schema):
                 if fk["referred_table"] == table_name:
                     incoming_fks.append(
                         IncomingForeignKey(
@@ -81,8 +82,9 @@ def describe_table(
                         )
                     )
 
+        table_ref = f"{db_schema}.{table_name}" if db_schema else table_name
         return TableDescription(
-            table=table_name,
+            table=table_ref,
             columns=columns,
             foreign_keys=foreign_keys,
             incoming_foreign_keys=incoming_fks,

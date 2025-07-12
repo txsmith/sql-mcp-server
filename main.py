@@ -43,18 +43,18 @@ def execute_query(database: str, query: str) -> Union[QueryResponse, ErrorRespon
 
 @mcp.tool()
 def sample_table(
-    database: str, table_name: str, limit: Optional[int] = None
+    database: str, table_name: str, limit: Optional[int] = None, db_schema: Optional[str] = None
 ) -> Union[SampleResponse, ErrorResponse]:
     """Sample rows from a table"""
-    return tools.sample_table(db_manager, database, table_name, limit)
+    return tools.sample_table(db_manager, database, table_name, limit, db_schema)
 
 
 @mcp.tool()
 def describe_table(
-    database: str, table_name: str
+    database: str, table_name: str, db_schema: Optional[str] = None
 ) -> Union[TableDescription, ErrorResponse]:
     """Get table structure including columns and foreign keys"""
-    return tools.describe_table(db_manager, database, table_name)
+    return tools.describe_table(db_manager, database, table_name, db_schema)
 
 
 @mcp.tool()

@@ -20,6 +20,7 @@ def sample_table(
     database: str,
     table_name: str,
     limit: Optional[int] = None,
+    db_schema: Optional[str] = None,
 ) -> Union[SampleResponse, ErrorResponse]:
     """Sample rows from a table"""
 
@@ -31,7 +32,8 @@ def sample_table(
 
     try:
         with engine.connect() as conn:
-            query = text(f"SELECT * FROM {table_name} LIMIT {sample_size}")
+            table_ref = f"{db_schema}.{table_name}" if db_schema else table_name
+            query = text(f"SELECT * FROM {table_ref} LIMIT {sample_size}")
             result = conn.execute(query)
             rows = result.fetchall()
             columns = list(result.keys())
@@ -41,7 +43,7 @@ def sample_table(
                 data.append(dict(zip(columns, row)))
 
             return SampleResponse(
-                table=table_name, columns=columns, rows=data, row_count=len(data)
+                table=table_ref, columns=columns, rows=data, row_count=len(data)
             )
 
     except SQLAlchemyError as e:
