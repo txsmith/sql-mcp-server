@@ -67,7 +67,7 @@ Executes a query on the specified database.
 - **database**: Name of the database from config
 - **query**: query to execute
 
-### `sample_table(database: str, table_name: str, limit: Optional[int])`
+### `sample_table(database: str, table_name: str, limit: int | None)`
 Samples rows from a table.
 - **database**: Name of the database
 - **table_name**: Name of the table to sample
@@ -78,7 +78,7 @@ Gets table structure including columns and foreign keys.
 - **database**: Name of the database
 - **table_name**: Name of the table to describe
 
-### `list_tables(database: str, schema: Optional[str])`
+### `list_tables(database: str, schema: str | None)`
 Lists all tables in the specified database with hierarchical schema structure.
 - **database**: Name of the database
 - **schema**: Optional schema name to filter by

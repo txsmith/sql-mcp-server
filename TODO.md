@@ -1,7 +1,5 @@
 # TODO
 
-- Ensure that flake8 does not look at the venv directory
-
 ## Password management integration
   - Integrate with `pass` utility for password storage
   - Avoid storing plaintext secrets in config files
@@ -21,4 +19,4 @@
 - Investigate if we can have a packaging step too for easy distribution
 
 ## More elaborate MCP type annotations
-
+- Add tool parameter metadata (https://gofastmcp.com/servers/tools#parameter-metadata)

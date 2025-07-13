@@ -1,6 +1,6 @@
 """Describe table tool"""
 
-from typing import Any, List, Optional, Union
+from typing import Any, List
 from sqlalchemy import inspect
 from sqlalchemy.exc import SQLAlchemyError
 from pydantic import BaseModel
@@ -12,7 +12,7 @@ class ColumnInfo(BaseModel):
     name: str
     type: str
     nullable: bool
-    default: Optional[Any] = None
+    default: Any = None
     primary_key: bool = False
 
 
@@ -36,8 +36,8 @@ class TableDescription(BaseModel):
 
 
 def describe_table(
-    db_manager: DatabaseManager, database: str, table_name: str, db_schema: Optional[str] = None
-) -> Union[TableDescription, ErrorResponse]:
+    db_manager: DatabaseManager, database: str, table_name: str, db_schema: str | None = None
+) -> TableDescription | ErrorResponse:
     """Get table structure including columns and foreign keys"""
 
     engine = db_manager.get_engine(database)

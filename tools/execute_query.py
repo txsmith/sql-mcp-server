@@ -1,6 +1,6 @@
 """Execute query tool"""
 
-from typing import Dict, Any, List, Union
+from typing import Dict, Any, List
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from pydantic import BaseModel
@@ -17,7 +17,7 @@ class QueryResponse(BaseModel):
 
 def execute_query(
     db_manager: DatabaseManager, database: str, query: str
-) -> Union[QueryResponse, ErrorResponse]:
+) -> QueryResponse | ErrorResponse:
     """Execute a SELECT query on the specified database"""
 
     engine = db_manager.get_engine(database)

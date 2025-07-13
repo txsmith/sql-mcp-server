@@ -1,6 +1,6 @@
 """Sample table tool"""
 
-from typing import Dict, Any, Optional, List, Union
+from typing import Dict, Any, List
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from pydantic import BaseModel
@@ -19,9 +19,9 @@ def sample_table(
     db_manager: DatabaseManager,
     database: str,
     table_name: str,
-    limit: Optional[int] = None,
-    db_schema: Optional[str] = None,
-) -> Union[SampleResponse, ErrorResponse]:
+    limit: int | None = None,
+    db_schema: str | None = None,
+) -> SampleResponse | ErrorResponse:
     """Sample rows from a table"""
 
     engine = db_manager.get_engine(database)

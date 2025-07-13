@@ -1,7 +1,7 @@
 """Shared database manager for MCP tools"""
 
 import yaml
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import URL
@@ -13,17 +13,17 @@ class DatabaseConfig(BaseModel):
     description: str
 
     # Option 1: Use connection string directly
-    connection_string: Optional[str] = None
+    connection_string: str | None = None
 
     # Option 2: Use individual fields
-    host: Optional[str] = None
-    port: Optional[int] = None
-    database: Optional[str] = None
-    username: Optional[str] = None
-    password: Optional[str] = None
-    account: Optional[str] = None  # For Snowflake
+    host: str | None = None
+    port: int | None = None
+    database: str | None = None
+    username: str | None = None
+    password: str | None = None
+    account: str | None = None  # For Snowflake
 
-    extra_params: Optional[Dict[str, str]] = None
+    extra_params: Dict[str, str] | None = None
 
     def get_connection_url(self):
         """Get SQLAlchemy URL from config"""
@@ -100,13 +100,13 @@ class DatabaseManager:
             except Exception as e:
                 print(f"Failed to initialize engine for {db_name}: {e}")
 
-    def get_engine(self, db_name: str) -> Optional[Engine]:
+    def get_engine(self, db_name: str) -> Engine | None:
         return self.engines.get(db_name)
 
     def list_database_names(self) -> List[str]:
         return list(self.engines.keys())
 
-    def get_database_config(self, db_name: str) -> Optional[DatabaseConfig]:
+    def get_database_config(self, db_name: str) -> DatabaseConfig | None:
         return self.config.databases.get(db_name)
 
 

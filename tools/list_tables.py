@@ -1,6 +1,6 @@
 """List tables tool"""
 
-from typing import List, Union
+from typing import List
 from sqlalchemy import inspect
 from sqlalchemy.exc import SQLAlchemyError
 from pydantic import BaseModel
@@ -21,7 +21,7 @@ class TablesResponse(BaseModel):
 
 def list_tables(
     db_manager: DatabaseManager, database: str, schema: str = None
-) -> Union[TablesResponse, ErrorResponse]:
+) -> TablesResponse | ErrorResponse:
     """List all tables in the specified database and optional schema"""
 
     engine = db_manager.get_engine(database)
