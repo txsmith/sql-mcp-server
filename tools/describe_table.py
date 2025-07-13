@@ -36,7 +36,10 @@ class TableDescription(BaseModel):
 
 
 def describe_table(
-    db_manager: DatabaseManager, database: str, table_name: str, db_schema: str | None = None
+    db_manager: DatabaseManager,
+    database: str,
+    table_name: str,
+    db_schema: str | None = None,
 ) -> TableDescription | ErrorResponse:
     """Get table structure including columns and foreign keys"""
 

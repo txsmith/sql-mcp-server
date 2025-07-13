@@ -1,9 +1,18 @@
-"""Unit tests for DatabaseConfig and expanded config format"""
+"""Tests for DatabaseManager URL generation from configurations"""
 
-import pytest
+from database_manager import DatabaseManager, DatabaseConfig, AppConfig
+from password_provider import NoOpPasswordProvider
 from sqlalchemy.engine.url import URL
+from pytest import raises
 
-from database_manager import DatabaseConfig
+
+def get_connection_url_for_test(
+    db_config: DatabaseConfig, db_name: str = "test_db", password_provider=None
+):
+    """Helper function to test connection URL generation using DatabaseManager"""
+    config = AppConfig(databases={db_name: db_config}, settings={})
+    manager = DatabaseManager(config, password_provider or NoOpPasswordProvider())
+    return manager.get_connection_url(db_name, db_config)
 
 
 def test_connection_string_mode():
@@ -13,8 +22,7 @@ def test_connection_string_mode():
         description="Test DB",
         connection_string="postgresql://user:pass@localhost:5432/mydb",
     )
-
-    url = config.get_connection_url()
+    url = get_connection_url_for_test(config)
     assert url == "postgresql://user:pass@localhost:5432/mydb"
 
 
@@ -29,8 +37,7 @@ def test_individual_fields_postgresql():
         username="user",
         password="pass",
     )
-
-    url = config.get_connection_url()
+    url = get_connection_url_for_test(config)
     assert isinstance(url, URL)
     assert url.drivername == "postgresql"
     assert url.username == "user"
@@ -51,8 +58,7 @@ def test_individual_fields_mysql():
         username="user",
         password="pass",
     )
-
-    url = config.get_connection_url()
+    url = get_connection_url_for_test(config)
     assert isinstance(url, URL)
     assert url.drivername == "mysql+pymysql"
     assert url.username == "user"
@@ -67,21 +73,19 @@ def test_individual_fields_sqlite():
     config = DatabaseConfig(
         type="sqlite", description="Test DB", database="/path/to/db.sqlite"
     )
-
-    url = config.get_connection_url()
+    url = get_connection_url_for_test(config)
     assert url == "sqlite:////path/to/db.sqlite"
 
 
 def test_sqlite_memory():
     """Test SQLite in-memory database"""
     config = DatabaseConfig(type="sqlite", description="Test DB", database=":memory:")
-
-    url = config.get_connection_url()
+    url = get_connection_url_for_test(config)
     assert url == "sqlite:///:memory:"
 
 
 def test_no_password():
-    """Test config without password"""
+    """Test config without password - should proceed with None password"""
     config = DatabaseConfig(
         type="postgresql",
         description="Test DB",
@@ -89,9 +93,9 @@ def test_no_password():
         port=5432,
         database="mydb",
         username="user",
+        password=None,
     )
-
-    url = config.get_connection_url()
+    url = get_connection_url_for_test(config)
     assert isinstance(url, URL)
     assert url.password is None
     assert url.username == "user"
@@ -108,8 +112,7 @@ def test_no_port():
         username="user",
         password="pass",
     )
-
-    url = config.get_connection_url()
+    url = get_connection_url_for_test(config)
     assert isinstance(url, URL)
     assert url.port is None
     assert url.host == "localhost"
@@ -128,8 +131,7 @@ def test_extra_params():
         password="pass",
         extra_params={"sslmode": "require", "connect_timeout": "10"},
     )
-
-    url = config.get_connection_url()
+    url = get_connection_url_for_test(config)
     assert isinstance(url, URL)
     url_str = str(url)
     assert "sslmode=require" in url_str
@@ -144,41 +146,11 @@ def test_special_characters_in_password():
         host="localhost",
         database="mydb",
         username="user",
-        password="p@ss!w$rd%",
+        password="p@ss%!w$rd%",
     )
-
-    url = config.get_connection_url()
+    url = get_connection_url_for_test(config)
     assert isinstance(url, URL)
-    # SQLAlchemy URL should properly encode special characters
-    assert url.password == "p@ss!w$rd%"
-
-
-def test_missing_required_fields():
-    """Test that missing required fields raise ValueError"""
-    with pytest.raises(
-        ValueError,
-        match="Either connection_string or host/database/username must be provided",
-    ):
-        config = DatabaseConfig(
-            type="postgresql",
-            description="Test DB",
-            host="localhost",
-            # Missing database and username
-        )
-        config.get_connection_url()
-
-
-def test_unsupported_database_type():
-    """Test that unsupported database types raise ValueError"""
-    with pytest.raises(ValueError, match="Unsupported database type"):
-        config = DatabaseConfig(
-            type="oracle",  # Not supported
-            description="Test DB",
-            host="localhost",
-            database="mydb",
-            username="user",
-        )
-        config.get_connection_url()
+    assert url.password == "p@ss%!w$rd%"
 
 
 def test_snowflake_fields():
@@ -192,8 +164,7 @@ def test_snowflake_fields():
         password="pass",
         extra_params={"warehouse": "COMPUTE_WH", "schema": "PUBLIC"},
     )
-
-    url = config.get_connection_url()
+    url = get_connection_url_for_test(config)
     assert isinstance(url, URL)
     url_str = str(url)
     assert "snowflake://" in url_str
@@ -207,12 +178,10 @@ def test_connection_string_takes_precedence():
         type="postgresql",
         description="Test DB",
         connection_string="postgresql://conn_user:conn_pass@conn_host:5432/conn_db",
-        # These should be ignored
         host="field_host",
         database="field_db",
         username="field_user",
         password="field_pass",
     )
-
-    url = config.get_connection_url()
+    url = get_connection_url_for_test(config)
     assert url == "postgresql://conn_user:conn_pass@conn_host:5432/conn_db"

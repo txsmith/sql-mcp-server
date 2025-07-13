@@ -1,6 +1,6 @@
 databases:
   # Option 1: Use connection string (existing format)
-  chinook_string:
+  chinook:
     type: sqlite
     connection_string: "sqlite:///tests/Chinook_Sqlite.sqlite"
     description: "Chinook sample SQLite database"
@@ -18,14 +18,25 @@ databases:
       sslmode: require
       connect_timeout: "10"
 
-  my_mysql:
-    type: mysql
-    description: "MySQL database"
-    host: db.example.com
-    port: 3306
-    database: analytics
-    username: readonly_user
-    password: secure_password
+  # Examples using password store (pass) integration
+  prod_postgres:
+    type: postgresql
+    description: "Production PostgreSQL using default pass key"
+    host: prod-db.example.com
+    port: 5432
+    database: myapp
+    username: app_user
+    # No password field - will use pass entry: databases/prod_postgres
+
+  dev_postgres:
+    type: postgresql
+    description: "Development PostgreSQL using custom pass key"
+    host: dev-db.example.com
+    port: 5432
+    database: dev_myapp
+    username: dev_user
+    password_store_key: "company/dev/postgres"
+    # Will use pass entry: company/dev/postgres
 
   memory_sqlite:
     type: sqlite

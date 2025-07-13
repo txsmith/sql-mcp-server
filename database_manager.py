@@ -5,7 +5,8 @@ from typing import Dict, Any, List
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import URL
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
+from password_provider import PasswordProvider, PassPasswordProvider
 
 
 class DatabaseConfig(BaseModel):
@@ -23,71 +24,114 @@ class DatabaseConfig(BaseModel):
     password: str | None = None
     account: str | None = None  # For Snowflake
 
+    # Custom password store key (overrides default databases/{db_name})
+    password_store_key: str | None = None
+
     extra_params: Dict[str, str] | None = None
 
-    def get_connection_url(self):
-        """Get SQLAlchemy URL from config"""
-        if self.connection_string:
-            return self.connection_string
+    @model_validator(mode="after")
+    def validate_config(self):
+        # Validate supported database types
+        supported_types = {"postgresql", "mysql", "sqlserver", "snowflake", "sqlite"}
+        if self.type not in supported_types:
+            raise ValueError(f"Unsupported database type: {self.type}")
 
+        # If using connection string, no further validation needed
+        if self.connection_string:
+            return self
+
+        if not self.database:
+            raise ValueError("database field is required")
+
+        # For SQLite, only database field is required
         if self.type == "sqlite":
-            if not self.database:
-                raise ValueError("SQLite requires database field")
-            if self.database == ":memory:":
-                return "sqlite:///:memory:"
-            else:
-                return f"sqlite:///{self.database}"
+            return self
 
         if not all([self.host, self.database, self.username]):
             raise ValueError(
                 "Either connection_string or host/database/username must be provided"
             )
 
+        return self
+
+    @property
+    def dialect(self) -> str:
         dialect_map = {
             "postgresql": "postgresql",
             "mysql": "mysql+pymysql",
             "sqlserver": "mssql+pyodbc",
             "snowflake": "snowflake",
+            "sqlite": "sqlite",
         }
-
-        dialect = dialect_map.get(self.type)
-        if not dialect:
-            raise ValueError(f"Unsupported database type: {self.type}")
-
-        # Special handling for Snowflake account parameter
-        query_params = self.extra_params.copy() if self.extra_params else {}
-        if self.type == "snowflake" and self.account:
-            query_params["account"] = self.account
-
-        url = URL.create(
-            drivername=dialect,
-            username=self.username,
-            password=self.password,
-            host=self.host,
-            port=self.port,
-            database=self.database,
-            query=query_params,
-        )
-
-        return url
+        return dialect_map[self.type]
 
 
 class AppConfig(BaseModel):
     databases: Dict[str, DatabaseConfig]
     settings: Dict[str, Any]
 
+    @model_validator(mode="after")
+    def validate_config(self):
+        seen_names = set()
+        for db_name in self.databases.keys():
+            name_lower = db_name.lower()
+            if name_lower in seen_names:
+                raise ValueError(f"{db_name} is defined twice!")
+            seen_names.add(name_lower)
+
+        return self
+
 
 class DatabaseManager:
-    def __init__(self, config: AppConfig):
+    def __init__(
+        self, config: AppConfig, password_provider: PasswordProvider | None = None
+    ):
         self.config = config
+        self.password_provider = password_provider or PassPasswordProvider()
         self.engines: Dict[str, Engine] = {}
-        self._initialize_engines()
 
-    def _initialize_engines(self):
-        for db_name, db_config in self.config.databases.items():
+    def get_connection_url(self, label: str, db_config: DatabaseConfig):
+        if db_config.connection_string:
+            return db_config.connection_string
+
+        if db_config.type == "sqlite":
+            if db_config.database == ":memory:":
+                return "sqlite:///:memory:"
+            else:
+                return f"sqlite:///{db_config.database}"
+
+        # Try to get password from provider if not configured
+        password = db_config.password
+        if not password and db_config.username:
+            pass_key = db_config.password_store_key or f"databases/{label}"
+            password = self.password_provider.get_password(pass_key)
+
+        # Special handling for Snowflake account parameter
+        query_params = db_config.extra_params.copy() if db_config.extra_params else {}
+        if db_config.type == "snowflake" and db_config.account:
+            query_params["account"] = db_config.account
+
+        url = URL.create(
+            drivername=db_config.dialect,
+            username=db_config.username,
+            password=password,
+            host=db_config.host,
+            port=db_config.port,
+            database=db_config.database,
+            query=query_params,
+        )
+
+        return url
+
+    def get_engine(self, db_label: str) -> Engine | None:
+        if db_label not in self.engines:
+            db_config = self.config.databases.get(db_label)
+            if not db_config:
+                return None
+
             try:
                 engine_kwargs = {"echo": False}
-                url = db_config.get_connection_url()
+                url = self.get_connection_url(db_label, db_config)
 
                 # Only add pool_timeout for non-SQLite databases
                 if not str(url).startswith("sqlite"):
@@ -96,15 +140,15 @@ class DatabaseManager:
                     )
 
                 engine = create_engine(url, **engine_kwargs)
-                self.engines[db_name] = engine
+                self.engines[db_label] = engine
             except Exception as e:
-                print(f"Failed to initialize engine for {db_name}: {e}")
+                print(f"Failed to initialize engine for {db_label}: {e}")
+                return None
 
-    def get_engine(self, db_name: str) -> Engine | None:
-        return self.engines.get(db_name)
+        return self.engines.get(db_label)
 
     def list_database_names(self) -> List[str]:
-        return list(self.engines.keys())
+        return list(self.config.databases.keys())
 
     def get_database_config(self, db_name: str) -> DatabaseConfig | None:
         return self.config.databases.get(db_name)

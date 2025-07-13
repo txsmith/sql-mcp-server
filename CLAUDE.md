@@ -1,8 +1,14 @@
 # Claude Code Notes
 
+## Useful docs for FastMCP
+- For LLMS: https://gofastmcp.com/llms.txt
+- 
+
 ## Code Style Preferences
 
 - **NO comments**: You shall not add code comments. Only on request, or when you've identified a non-obvious gotcha
+- **Dependency injection:** Plain constructor/value passing should be used to separate different functional components from each other.
+- **NO mocks**: mocking should not be done with a library as this elicits poor software design. Combined with proper dependency injection, tests should just instantiate and pass stubbed components if something needs to be mocked.
 - **Run 'black' after Python edits**: Any time you make an edit to a Python file, run flake8 to format it
 - **Prefer typed/structured data**: Use typed/structured data over dicts. Types make it easier to write tests and debug
 

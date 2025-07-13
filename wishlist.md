@@ -1,9 +1,4 @@
-# TODO
-
-## Password management integration
-  - Integrate with `pass` utility for password storage
-  - Avoid storing plaintext secrets in config files
-  - Support password references like `password: "pass:database/mydb"`
+# Long term wishes
 
 ## Add pagination to MCP tools
   - Currently all results returned at once, can hit Claude's token limits
@@ -15,8 +10,8 @@
   - Consider default page sizes and max limits per tool
 
 ## GitHub actions for CI 
-- Create a CI pipeline using GitHub Actions that runs pytest and flake8
-- Investigate if we can have a packaging step too for easy distribution
+- Create a CI pipeline using GitHub Actions that runs pytest
+- Investigate if we can have a packaging step for easy distribution
 
 ## More elaborate MCP type annotations
 - Add tool parameter metadata (https://gofastmcp.com/servers/tools#parameter-metadata)

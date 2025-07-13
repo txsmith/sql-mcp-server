@@ -5,12 +5,12 @@ databases:
     description: "Test SQLite database"
   chinook_sqlite:
     type: sqlite
-    database: "tests/Chinook_Sqlite.sqlite"
+    database: "tests/tools/Chinook_Sqlite.sqlite"
     description: "Chinook sample SQLite database"
   chinook_sqlite_conn_str:
      type: sqlite
      description: blah
-     connection_string: "sqlite:///tests/Chinook_Sqlite.sqlite"
+     connection_string: "sqlite:///tests/tools/Chinook_Sqlite.sqlite"
   test_postgres:
     type: postgresql
     host: localhost
