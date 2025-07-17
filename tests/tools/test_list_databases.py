@@ -16,7 +16,7 @@ sys.path.insert(0, str(project_root))
 @pytest.fixture
 def db_manager():
     """Fixture to provide database manager for tests"""
-    config_path = os.path.join(os.path.dirname(__file__), "test_config.yaml")
+    config_path = os.path.join(os.path.dirname(__file__), "../test_config.yaml")
     config = load_config(config_path)
     return DatabaseManager(config)
 

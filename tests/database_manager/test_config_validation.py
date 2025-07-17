@@ -1,13 +1,13 @@
 """Tests for DatabaseManager configuration validation"""
 
-from database_manager import DatabaseConfig, AppConfig
+from database_manager import DatabaseConfig, AppConfig, ConfigurationError
 from pytest import raises
 
 
 def test_missing_required_fields():
     """Test that missing required fields raise ValueError at config creation time"""
     with raises(
-        ValueError,
+        ConfigurationError,
         match="Either connection_string or host/database/username must be provided",
     ):
         DatabaseConfig(
@@ -20,7 +20,7 @@ def test_missing_required_fields():
 
 def test_unsupported_database_type():
     """Test that unsupported database types raise ValueError at config creation time"""
-    with raises(ValueError, match="Unsupported database type"):
+    with raises(ConfigurationError, match="Unsupported database type"):
         DatabaseConfig(
             type="wiggle",
             description="Test DB",
@@ -31,7 +31,7 @@ def test_unsupported_database_type():
 
 def test_duplicate_database_names():
     """Test that duplicate database names (case-insensitive) raise ValueError"""
-    with raises(ValueError, match="TEST_DB is defined twice!"):
+    with raises(ConfigurationError, match="TEST_DB is defined twice!"):
         AppConfig(
             databases={
                 "test_db": DatabaseConfig(

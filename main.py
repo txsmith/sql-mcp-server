@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Database Explorer MCP Server
 A FastMCP server for exploring multiple databases with SELECT queries,
@@ -16,6 +15,7 @@ from tools.execute_query import QueryResponse
 from tools.sample_table import SampleResponse
 from tools.describe_table import TableDescription
 from tools.list_tables import TablesResponse
+from tools.test_connection import ConnectionTestResponse
 
 mcp = FastMCP("Database Explorer")
 
@@ -42,30 +42,34 @@ def execute_query(database: str, query: str) -> QueryResponse | ErrorResponse:
 
 
 @mcp.tool()
-def sample_table(
+async def sample_table(
     database: str,
     table_name: str,
     limit: int | None = None,
     db_schema: str | None = None,
 ) -> SampleResponse | ErrorResponse:
     """Sample rows from a table"""
-    return tools.sample_table(db_manager, database, table_name, limit, db_schema)
+    return await tools.sample_table(db_manager, database, table_name, limit, db_schema)
 
 
 @mcp.tool()
-def describe_table(
+async def describe_table(
     database: str, table_name: str, db_schema: str | None = None
-) -> TableDescription | ErrorResponse:
+) -> TableDescription:
     """Get table structure including columns and foreign keys"""
-    return tools.describe_table(db_manager, database, table_name, db_schema)
+    return await tools.describe_table(db_manager, database, table_name, db_schema)
 
 
 @mcp.tool()
-def list_tables(
-    database: str, schema: str | None = None
-) -> TablesResponse | ErrorResponse:
+async def list_tables(database: str, schema: str | None = None) -> TablesResponse:
     """List all tables in the specified database and optional schema"""
-    return tools.list_tables(db_manager, database, schema)
+    return await tools.list_tables(db_manager, database, schema)
+
+
+@mcp.tool()
+async def test_connection(database: str) -> ConnectionTestResponse:
+    """Test database connection"""
+    return await tools.test_connection(db_manager, database)
 
 
 if __name__ == "__main__":

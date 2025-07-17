@@ -2,10 +2,8 @@
 
 from typing import Dict, Any, List
 from sqlalchemy import text
-from sqlalchemy.exc import SQLAlchemyError
 from pydantic import BaseModel
 from database_manager import DatabaseManager
-from .common import ErrorResponse
 
 
 class QueryResponse(BaseModel):
@@ -15,20 +13,20 @@ class QueryResponse(BaseModel):
     truncated: bool
 
 
-def execute_query(
+class QueryError(Exception):
+    pass
+
+
+async def execute_query(
     db_manager: DatabaseManager, database: str, query: str
-) -> QueryResponse | ErrorResponse:
+) -> QueryResponse:
     """Execute a SELECT query on the specified database"""
 
-    engine = db_manager.get_engine(database)
-    if not engine:
-        return ErrorResponse(error=f"Database '{database}' not found")
+    max_rows = db_manager.config.settings.get("max_rows_per_query", 1000)
 
-    try:
-        max_rows = db_manager.config.settings.get("max_rows_per_query", 1000)
-
-        with engine.connect() as conn:
-            result = conn.execute(text(query))
+    async with db_manager.connect(database) as conn:
+        try:
+            result = await conn.execute(text(query))
             rows = result.fetchmany(max_rows)
             columns = list(result.keys())
 
@@ -42,6 +40,5 @@ def execute_query(
                 row_count=len(data),
                 truncated=len(data) == max_rows,
             )
-
-    except SQLAlchemyError as e:
-        return ErrorResponse(error=f"Query execution failed: {str(e)}")
+        except Exception as e:
+            raise QueryError(f"Error executing query: {str(e)}") from e

@@ -1,10 +1,11 @@
 """Tests for DatabaseManager engine lifecycle and caching"""
 
+from sqlalchemy import text
 from database_manager import DatabaseManager, DatabaseConfig, AppConfig
 from password_provider import StaticPasswordProvider, NoOpPasswordProvider
 
 
-def test_database_manager_lazy_engine_creation():
+async def test_database_manager_lazy_engine_creation():
     """Test that DatabaseManager creates engines lazily"""
     config = AppConfig(
         databases={
@@ -26,6 +27,9 @@ def test_database_manager_lazy_engine_creation():
     engine = manager.get_engine("test_db")
     assert engine is not None
     assert len(manager.engines) == 1
+
+    async with engine.connect() as conn:
+        await conn.execute(text("SELECT 1"))
 
     # Subsequent access should return cached engine
     engine2 = manager.get_engine("test_db")

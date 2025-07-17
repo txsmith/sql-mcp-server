@@ -105,7 +105,7 @@ def test_database_manager_connection_string():
     db_config = manager.get_database_config("test_db")
     url = manager.get_connection_url("test_db", db_config)
 
-    assert url == "postgresql://user:conn_pass@localhost:5432/mydb"
+    assert url == "postgresql+asyncpg://user:conn_pass@localhost:5432/mydb"
 
 
 def test_database_manager_custom_password_store_key():

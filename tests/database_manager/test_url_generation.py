@@ -3,7 +3,6 @@
 from database_manager import DatabaseManager, DatabaseConfig, AppConfig
 from password_provider import NoOpPasswordProvider
 from sqlalchemy.engine.url import URL
-from pytest import raises
 
 
 def get_connection_url_for_test(
@@ -23,7 +22,7 @@ def test_connection_string_mode():
         connection_string="postgresql://user:pass@localhost:5432/mydb",
     )
     url = get_connection_url_for_test(config)
-    assert url == "postgresql://user:pass@localhost:5432/mydb"
+    assert url == "postgresql+asyncpg://user:pass@localhost:5432/mydb"
 
 
 def test_individual_fields_postgresql():
@@ -39,7 +38,7 @@ def test_individual_fields_postgresql():
     )
     url = get_connection_url_for_test(config)
     assert isinstance(url, URL)
-    assert url.drivername == "postgresql"
+    assert url.drivername == "postgresql+asyncpg"
     assert url.username == "user"
     assert url.password == "pass"
     assert url.host == "localhost"
@@ -60,7 +59,7 @@ def test_individual_fields_mysql():
     )
     url = get_connection_url_for_test(config)
     assert isinstance(url, URL)
-    assert url.drivername == "mysql+pymysql"
+    assert url.drivername == "mysql+aiomysql"
     assert url.username == "user"
     assert url.password == "pass"
     assert url.host == "localhost"
@@ -74,14 +73,14 @@ def test_individual_fields_sqlite():
         type="sqlite", description="Test DB", database="/path/to/db.sqlite"
     )
     url = get_connection_url_for_test(config)
-    assert url == "sqlite:////path/to/db.sqlite"
+    assert url == "sqlite+aiosqlite:////path/to/db.sqlite"
 
 
 def test_sqlite_memory():
     """Test SQLite in-memory database"""
     config = DatabaseConfig(type="sqlite", description="Test DB", database=":memory:")
     url = get_connection_url_for_test(config)
-    assert url == "sqlite:///:memory:"
+    assert url == "sqlite+aiosqlite:///:memory:"
 
 
 def test_no_password():
@@ -184,4 +183,4 @@ def test_connection_string_takes_precedence():
         password="field_pass",
     )
     url = get_connection_url_for_test(config)
-    assert url == "postgresql://conn_user:conn_pass@conn_host:5432/conn_db"
+    assert url == "postgresql+asyncpg://conn_user:conn_pass@conn_host:5432/conn_db"

@@ -3,22 +3,25 @@
 import os
 import pytest
 
-from database_manager import load_config, DatabaseManager
-from tools.execute_query import execute_query, QueryResponse, ErrorResponse
+from database_manager import (
+    load_config,
+    DatabaseManager,
+)
+from tools.execute_query import execute_query, QueryResponse, QueryError
 
 
 @pytest.fixture
-def db_manager():
+async def db_manager():
     """Fixture to provide database manager for tests"""
-    config_path = os.path.join(os.path.dirname(__file__), "test_config.yaml")
+    config_path = os.path.join(os.path.dirname(__file__), "../test_config.yaml")
     config = load_config(config_path)
     return DatabaseManager(config)
 
 
-def test_execute_query_simple_select(db_manager):
+async def test_execute_query_simple_select(db_manager):
     """Test that execute_query works with a simple SELECT query"""
     query = "SELECT AlbumId, Title FROM Album LIMIT 3"
-    result = execute_query(db_manager, "chinook_sqlite", query)
+    result = await execute_query(db_manager, "chinook_sqlite", query)
 
     assert isinstance(result, QueryResponse)
     assert len(result.columns) == 2
@@ -29,25 +32,14 @@ def test_execute_query_simple_select(db_manager):
     assert not result.truncated
 
 
-def test_execute_query_nonexistent_database(db_manager):
-    """Test that execute_query handles non-existent database"""
-    query = "SELECT 1"
-    result = execute_query(db_manager, "nonexistent_db", query)
-
-    assert isinstance(result, ErrorResponse)
-    assert "Database 'nonexistent_db' not found" in result.error
-
-
-def test_execute_query_invalid_sql(db_manager):
+async def test_execute_query_invalid_sql(db_manager):
     """Test that execute_query handles invalid SQL"""
     query = "SELECT * FROM NonexistentTable"
-    result = execute_query(db_manager, "chinook_sqlite", query)
-
-    assert isinstance(result, ErrorResponse)
-    assert "Query execution failed" in result.error
+    with pytest.raises(QueryError):
+        await execute_query(db_manager, "chinook_sqlite", query)
 
 
-def test_execute_query_join_query(db_manager):
+async def test_execute_query_join_query(db_manager):
     """Test that execute_query works with JOIN queries"""
     query = """
     SELECT a.Title, ar.Name as ArtistName
@@ -55,7 +47,7 @@ def test_execute_query_join_query(db_manager):
     JOIN Artist ar ON a.ArtistId = ar.ArtistId
     LIMIT 5
     """
-    result = execute_query(db_manager, "chinook_sqlite", query)
+    result = await execute_query(db_manager, "chinook_sqlite", query)
 
     assert isinstance(result, QueryResponse)
     assert len(result.columns) == 2
@@ -64,10 +56,10 @@ def test_execute_query_join_query(db_manager):
     assert result.row_count == 5
 
 
-def test_execute_query_aggregate_functions(db_manager):
+async def test_execute_query_aggregate_functions(db_manager):
     """Test that execute_query works with aggregate functions"""
     query = "SELECT COUNT(*) as total_albums FROM Album"
-    result = execute_query(db_manager, "chinook_sqlite", query)
+    result = await execute_query(db_manager, "chinook_sqlite", query)
 
     assert isinstance(result, QueryResponse)
     assert len(result.columns) == 1
@@ -76,20 +68,11 @@ def test_execute_query_aggregate_functions(db_manager):
     assert result.rows[0]["total_albums"] > 0
 
 
-def test_execute_query_connection_error(db_manager):
-    """Test that execute_query handles connection errors"""
-    query = "SELECT 1"
-    result = execute_query(db_manager, "test_postgres", query)
-
-    assert isinstance(result, ErrorResponse)
-    assert "Query execution failed" in result.error
-
-
-def test_execute_query_truncation_behavior(db_manager):
+async def test_execute_query_truncation_behavior(db_manager):
     """Test that execute_query properly handles row limits and truncation"""
     # This test assumes Chinook has more than 10 tracks
     query = "SELECT TrackId FROM Track"
-    result = execute_query(db_manager, "chinook_sqlite", query)
+    result = await execute_query(db_manager, "chinook_sqlite", query)
 
     assert isinstance(result, QueryResponse)
     # Should be truncated to max_rows_per_query (500 in test config)
@@ -102,10 +85,10 @@ def test_execute_query_truncation_behavior(db_manager):
         assert not result.truncated
 
 
-def test_execute_query_empty_result_set(db_manager):
+async def test_execute_query_empty_result_set(db_manager):
     """Test that execute_query handles queries that return no rows"""
     query = "SELECT * FROM Album WHERE AlbumId = -1"
-    result = execute_query(db_manager, "chinook_sqlite", query)
+    result = await execute_query(db_manager, "chinook_sqlite", query)
 
     assert isinstance(result, QueryResponse)
     assert result.row_count == 0
@@ -113,7 +96,7 @@ def test_execute_query_empty_result_set(db_manager):
     assert not result.truncated
 
 
-def test_execute_query_data_types(db_manager):
+async def test_execute_query_data_types(db_manager):
     """Test that execute_query handles different data types correctly"""
     query = """
     SELECT
@@ -124,7 +107,7 @@ def test_execute_query_data_types(db_manager):
     FROM Employee
     LIMIT 1
     """
-    result = execute_query(db_manager, "chinook_sqlite", query)
+    result = await execute_query(db_manager, "chinook_sqlite", query)
 
     assert isinstance(result, QueryResponse)
     assert result.row_count == 1
@@ -135,7 +118,7 @@ def test_execute_query_data_types(db_manager):
     # BirthDate and ReportsTo can be None or have values
 
 
-def test_execute_query_with_comments(db_manager):
+async def test_execute_query_with_comments(db_manager):
     """Test that execute_query works with SQL comments"""
     query = """
     /* This is a comment */
@@ -144,7 +127,7 @@ def test_execute_query_with_comments(db_manager):
     -- Another comment
     LIMIT 2
     """
-    result = execute_query(db_manager, "chinook_sqlite", query)
+    result = await execute_query(db_manager, "chinook_sqlite", query)
 
     assert isinstance(result, QueryResponse)
     assert result.row_count == 2

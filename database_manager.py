@@ -2,11 +2,23 @@
 
 import yaml
 from typing import Dict, Any, List
-from sqlalchemy import create_engine
-from sqlalchemy.engine import Engine
+from contextlib import asynccontextmanager
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
 from sqlalchemy.engine.url import URL
 from pydantic import BaseModel, model_validator
 from password_provider import PasswordProvider, PassPasswordProvider
+
+
+class ConnectionError(Exception):
+    pass
+
+
+class DatabaseNotFoundError(Exception):
+    pass
+
+
+class ConfigurationError(Exception):
+    pass
 
 
 class DatabaseConfig(BaseModel):
@@ -34,21 +46,21 @@ class DatabaseConfig(BaseModel):
         # Validate supported database types
         supported_types = {"postgresql", "mysql", "sqlserver", "snowflake", "sqlite"}
         if self.type not in supported_types:
-            raise ValueError(f"Unsupported database type: {self.type}")
+            raise ConfigurationError(f"Unsupported database type: {self.type}")
 
         # If using connection string, no further validation needed
         if self.connection_string:
             return self
 
         if not self.database:
-            raise ValueError("database field is required")
+            raise ConfigurationError("database field is required")
 
         # For SQLite, only database field is required
         if self.type == "sqlite":
             return self
 
         if not all([self.host, self.database, self.username]):
-            raise ValueError(
+            raise ConfigurationError(
                 "Either connection_string or host/database/username must be provided"
             )
 
@@ -57,11 +69,11 @@ class DatabaseConfig(BaseModel):
     @property
     def dialect(self) -> str:
         dialect_map = {
-            "postgresql": "postgresql",
-            "mysql": "mysql+pymysql",
+            "postgresql": "postgresql+asyncpg",
+            "mysql": "mysql+aiomysql",
             "sqlserver": "mssql+pyodbc",
             "snowflake": "snowflake",
-            "sqlite": "sqlite",
+            "sqlite": "sqlite+aiosqlite",
         }
         return dialect_map[self.type]
 
@@ -76,7 +88,7 @@ class AppConfig(BaseModel):
         for db_name in self.databases.keys():
             name_lower = db_name.lower()
             if name_lower in seen_names:
-                raise ValueError(f"{db_name} is defined twice!")
+                raise ConfigurationError(f"{db_name} is defined twice!")
             seen_names.add(name_lower)
 
         return self
@@ -88,17 +100,25 @@ class DatabaseManager:
     ):
         self.config = config
         self.password_provider = password_provider or PassPasswordProvider()
-        self.engines: Dict[str, Engine] = {}
+        self.engines: Dict[str, AsyncEngine] = {}
 
     def get_connection_url(self, label: str, db_config: DatabaseConfig):
         if db_config.connection_string:
-            return db_config.connection_string
+            # Convert sync connection strings to async ones
+            conn_str = db_config.connection_string
+            if conn_str.startswith("sqlite://"):
+                conn_str = conn_str.replace("sqlite://", "sqlite+aiosqlite://", 1)
+            elif conn_str.startswith("postgresql://"):
+                conn_str = conn_str.replace("postgresql://", "postgresql+asyncpg://", 1)
+            elif conn_str.startswith("mysql://"):
+                conn_str = conn_str.replace("mysql://", "mysql+aiomysql://", 1)
+            return conn_str
 
         if db_config.type == "sqlite":
             if db_config.database == ":memory:":
-                return "sqlite:///:memory:"
+                return f"{db_config.dialect}:///:memory:"
             else:
-                return f"sqlite:///{db_config.database}"
+                return f"{db_config.dialect}:///{db_config.database}"
 
         # Try to get password from provider if not configured
         password = db_config.password
@@ -123,27 +143,25 @@ class DatabaseManager:
 
         return url
 
-    def get_engine(self, db_label: str) -> Engine | None:
+    def get_engine(self, db_label: str) -> AsyncEngine:
         if db_label not in self.engines:
             db_config = self.config.databases.get(db_label)
             if not db_config:
-                return None
+                raise DatabaseNotFoundError(
+                    f"Database config entry for {db_label} not found"
+                )
 
-            try:
-                engine_kwargs = {"echo": False}
-                url = self.get_connection_url(db_label, db_config)
+            engine_kwargs = {"echo": False}
+            url = self.get_connection_url(db_label, db_config)
 
-                # Only add pool_timeout for non-SQLite databases
-                if not str(url).startswith("sqlite"):
-                    engine_kwargs["pool_timeout"] = self.config.settings.get(
-                        "max_query_timeout", 30
-                    )
+            # Only add pool_timeout for non-SQLite databases
+            if not str(url).startswith("sqlite"):
+                engine_kwargs["pool_timeout"] = self.config.settings.get(
+                    "max_query_timeout", 30
+                )
 
-                engine = create_engine(url, **engine_kwargs)
-                self.engines[db_label] = engine
-            except Exception as e:
-                print(f"Failed to initialize engine for {db_label}: {e}")
-                return None
+            engine = create_async_engine(url, **engine_kwargs)
+            self.engines[db_label] = engine
 
         return self.engines.get(db_label)
 
@@ -152,6 +170,21 @@ class DatabaseManager:
 
     def get_database_config(self, db_name: str) -> DatabaseConfig | None:
         return self.config.databases.get(db_name)
+
+    @asynccontextmanager
+    async def connect(self, db_label: str):
+        """Get an async database connection context manager that wraps exceptions"""
+        engine = self.get_engine(db_label)
+
+        try:
+            conn = await engine.connect()
+        except Exception as e:
+            raise ConnectionError(f"Failed to connect to database '{db_label}'") from e
+
+        try:
+            yield conn
+        finally:
+            await conn.close()
 
 
 def load_config(config_path: str) -> AppConfig:
