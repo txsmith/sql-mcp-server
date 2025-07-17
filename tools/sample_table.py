@@ -19,12 +19,11 @@ async def sample_table(
     db_manager: DatabaseManager,
     database: str,
     table_name: str,
-    limit: int | None = None,
     db_schema: str | None = None,
 ) -> SampleResponse:
     """Sample rows from a table"""
 
-    sample_size = limit or db_manager.config.settings.get("sample_size", 10)
+    sample_size = db_manager.config.settings.get("sample_size", 10)
 
     async with db_manager.connect(database) as conn:
         table_ref = f"{db_schema}.{table_name}" if db_schema else table_name

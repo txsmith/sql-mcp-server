@@ -13,8 +13,8 @@ async def db_manager():
     return DatabaseManager(config)
 
 
-async def test_sample_table_album_default_limit(db_manager):
-    """Test that sample_table returns sample data from Album table with default limit"""
+async def test_sample_table_album(db_manager):
+    """Test that sample_table returns sample data from Album table"""
     result = await sample_table(db_manager, "chinook_sqlite", "Album")
 
     assert isinstance(result, SampleResponse)
@@ -29,17 +29,6 @@ async def test_sample_table_album_default_limit(db_manager):
     assert result.row_count <= 10  # Default sample size
 
 
-async def test_sample_table_with_custom_limit(db_manager):
-    """Test that sample_table respects custom limit parameter"""
-    limit = 5
-    result = await sample_table(db_manager, "chinook_sqlite", "Track", limit)
-
-    assert isinstance(result, SampleResponse)
-    assert result.table == "Track"
-    assert result.row_count == limit
-    assert len(result.rows) == limit
-
-
 async def test_sample_table_nonexistent_table(db_manager):
     """Test that sample_table handles non-existent table"""
     with pytest.raises(SampleTableError):
@@ -48,7 +37,7 @@ async def test_sample_table_nonexistent_table(db_manager):
 
 async def test_sample_table_data_structure(db_manager):
     """Test that sample_table returns proper data structure"""
-    result = await sample_table(db_manager, "chinook_sqlite", "Artist", limit=3)
+    result = await sample_table(db_manager, "chinook_sqlite", "Artist")
 
     assert isinstance(result, SampleResponse)
 
@@ -60,21 +49,13 @@ async def test_sample_table_data_structure(db_manager):
             assert set(row.keys()) == set(result.columns)
 
 
-async def test_sample_table_large_limit(db_manager):
-    """Test that sample_table handles limits larger than table size"""
-    result = await sample_table(db_manager, "chinook_sqlite", "Album", limit=1000)
-
-    assert isinstance(result, SampleResponse)
-    assert result.row_count <= 1000
-
-
 async def test_sample_table_employee_structure(db_manager):
     """Test that sample_table correctly samples Employee table structure"""
-    result = await sample_table(db_manager, "chinook_sqlite", "Employee", limit=2)
+    result = await sample_table(db_manager, "chinook_sqlite", "Employee")
 
     assert isinstance(result, SampleResponse)
     assert result.table == "Employee"
-    assert result.row_count <= 2
+    assert result.row_count <= 8
 
     expected_columns = [
         "EmployeeId",

@@ -44,11 +44,10 @@ def execute_query(database: str, query: str) -> QueryResponse:
 async def sample_table(
     database: str,
     table_name: str,
-    limit: int | None = None,
     db_schema: str | None = None,
 ) -> SampleResponse:
     """Sample rows from a table"""
-    return await tools.sample_table(db_manager, database, table_name, limit, db_schema)
+    return await tools.sample_table(db_manager, database, table_name, db_schema)
 
 
 @mcp.tool()
