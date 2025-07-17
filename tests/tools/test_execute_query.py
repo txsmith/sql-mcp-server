@@ -1,5 +1,3 @@
-"""Unit tests for execute_query function"""
-
 import os
 import pytest
 

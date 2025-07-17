@@ -1,5 +1,3 @@
-"""Describe table tool"""
-
 from typing import Any, List
 from sqlalchemy import inspect
 from pydantic import BaseModel

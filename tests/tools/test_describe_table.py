@@ -1,5 +1,3 @@
-"""Unit tests for describe_table function"""
-
 import os
 import pytest
 

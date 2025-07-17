@@ -1,5 +1,3 @@
-"""Unit tests for list_tables function"""
-
 import os
 import pytest
 

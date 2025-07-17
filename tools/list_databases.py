@@ -1,5 +1,3 @@
-"""List databases tool"""
-
 from typing import List, Dict
 from database_manager import DatabaseManager
 

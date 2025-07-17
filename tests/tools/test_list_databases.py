@@ -1,5 +1,3 @@
-"""Unit tests for list_databases function"""
-
 import os
 import sys
 import pytest

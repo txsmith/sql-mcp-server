@@ -1,5 +1,3 @@
-"""Test connection tool for debugging"""
-
 from sqlalchemy import text
 from pydantic import BaseModel
 from database_manager import DatabaseManager

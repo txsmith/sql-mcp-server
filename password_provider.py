@@ -1,5 +1,3 @@
-"""Password provider for database connections"""
-
 import subprocess
 from abc import ABC, abstractmethod
 

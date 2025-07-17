@@ -1,5 +1,3 @@
-"""Shared database manager for MCP tools"""
-
 import yaml
 from typing import Dict, Any, List
 from contextlib import asynccontextmanager

@@ -1,5 +1,3 @@
-"""Unit tests for password providers"""
-
 import pytest
 from unittest.mock import patch
 

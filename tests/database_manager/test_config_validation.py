@@ -1,5 +1,3 @@
-"""Tests for DatabaseManager configuration validation"""
-
 from database_manager import DatabaseConfig, AppConfig, ConfigurationError
 from pytest import raises
 

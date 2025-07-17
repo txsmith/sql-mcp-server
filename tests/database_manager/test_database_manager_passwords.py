@@ -1,5 +1,3 @@
-"""Tests for DatabaseManager password provider integration"""
-
 from database_manager import DatabaseManager, DatabaseConfig, AppConfig
 from password_provider import StaticPasswordProvider, NoOpPasswordProvider
 

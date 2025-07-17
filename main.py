@@ -10,7 +10,6 @@ from typing import List, Dict
 from fastmcp import FastMCP
 from database_manager import load_config, DatabaseManager
 import tools
-from tools.common import ErrorResponse
 from tools.execute_query import QueryResponse
 from tools.sample_table import SampleResponse
 from tools.describe_table import TableDescription
@@ -36,7 +35,7 @@ def list_databases() -> List[Dict[str, str]]:
 
 
 @mcp.tool()
-def execute_query(database: str, query: str) -> QueryResponse | ErrorResponse:
+def execute_query(database: str, query: str) -> QueryResponse:
     """Execute a SELECT query on the specified database"""
     return tools.execute_query(db_manager, database, query)
 
@@ -47,7 +46,7 @@ async def sample_table(
     table_name: str,
     limit: int | None = None,
     db_schema: str | None = None,
-) -> SampleResponse | ErrorResponse:
+) -> SampleResponse:
     """Sample rows from a table"""
     return await tools.sample_table(db_manager, database, table_name, limit, db_schema)
 

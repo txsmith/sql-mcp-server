@@ -1,5 +1,3 @@
-"""Execute query tool"""
-
 from typing import Dict, Any, List
 from sqlalchemy import text
 from pydantic import BaseModel

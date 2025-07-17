@@ -1,5 +1,3 @@
-"""Test suite for database_manager connection and database existence behaviors"""
-
 import os
 import pytest
 

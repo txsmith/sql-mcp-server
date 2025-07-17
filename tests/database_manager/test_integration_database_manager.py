@@ -1,5 +1,3 @@
-"""Tests for DatabaseManager engine lifecycle and caching"""
-
 from sqlalchemy import text
 from database_manager import DatabaseManager, DatabaseConfig, AppConfig
 from password_provider import StaticPasswordProvider, NoOpPasswordProvider
