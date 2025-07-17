@@ -1,7 +1,9 @@
 import yaml
+import asyncio
 from typing import Dict, Any, List
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
+from sqlalchemy import create_engine, Engine, text, inspect
 from sqlalchemy.engine.url import URL
 from pydantic import BaseModel, model_validator
 from password_provider import PasswordProvider, PassPasswordProvider
@@ -16,6 +18,10 @@ class DatabaseNotFoundError(Exception):
 
 
 class ConfigurationError(Exception):
+    pass
+
+
+class QueryError(Exception):
     pass
 
 
@@ -98,7 +104,7 @@ class DatabaseManager:
     ):
         self.config = config
         self.password_provider = password_provider or PassPasswordProvider()
-        self.engines: Dict[str, AsyncEngine] = {}
+        self.engines: Dict[str, AsyncEngine | Engine] = {}
 
     def get_connection_url(self, label: str, db_config: DatabaseConfig):
         if db_config.connection_string:
@@ -118,7 +124,6 @@ class DatabaseManager:
             else:
                 return f"{db_config.dialect}:///{db_config.database}"
 
-        # Try to get password from provider if not configured
         password = db_config.password
         if not password and db_config.username:
             pass_key = db_config.password_store_key or f"databases/{label}"
@@ -141,7 +146,7 @@ class DatabaseManager:
 
         return url
 
-    def get_engine(self, db_label: str) -> AsyncEngine:
+    def get_engine(self, db_label: str) -> AsyncEngine | Engine:
         if db_label not in self.engines:
             db_config = self.config.databases.get(db_label)
             if not db_config:
@@ -158,7 +163,11 @@ class DatabaseManager:
                     "max_query_timeout", 30
                 )
 
-            engine = create_async_engine(url, **engine_kwargs)
+            # Snowflake doesn't have native async support, use sync engine with async wrapper
+            if db_config.type == "snowflake":
+                engine = create_engine(url, **engine_kwargs)
+            else:
+                engine = create_async_engine(url, **engine_kwargs)
             self.engines[db_label] = engine
 
         return self.engines.get(db_label)
@@ -171,18 +180,92 @@ class DatabaseManager:
 
     @asynccontextmanager
     async def connect(self, db_label: str):
-        """Get an async database connection context manager that wraps exceptions"""
+        """Async connection context manager for async engines"""
         engine = self.get_engine(db_label)
+
+        if not isinstance(engine, AsyncEngine):
+            raise ValueError(
+                f"Cannot use async connect with sync engine for {db_label}"
+            )
 
         try:
             conn = await engine.connect()
         except Exception as e:
-            raise ConnectionError(f"Failed to connect to database '{db_label}'") from e
+            raise ConnectionError(
+                f"Failed to connect to database '{db_label}': {str(e)}"
+            ) from e
 
         try:
             yield conn
         finally:
             await conn.close()
+
+    @contextmanager
+    def connect_sync(self, db_label: str):
+        """Sync connection context manager for sync engines"""
+        engine = self.get_engine(db_label)
+
+        if isinstance(engine, AsyncEngine):
+            raise ValueError(
+                f"Cannot use sync connect with async engine for {db_label}"
+            )
+
+        try:
+            conn = engine.connect()
+        except Exception as e:
+            raise ConnectionError(
+                f"Failed to connect to database '{db_label}': {str(e)}"
+            ) from e
+
+        try:
+            yield conn
+        finally:
+            conn.close()
+
+    async def execute_query(self, db_label: str, query: str):
+        """Execute a query handling both sync and async connections"""
+        engine = self.get_engine(db_label)
+
+        if isinstance(engine, AsyncEngine):
+            async with self.connect(db_label) as conn:
+                try:
+                    result = await conn.execute(text(query))
+                    return result
+                except Exception as e:
+                    raise QueryError(f"Error executing query: {str(e)}") from e
+        else:
+            loop = asyncio.get_event_loop()
+
+            def _execute_sync():
+                with self.connect_sync(db_label) as conn:
+                    try:
+                        return conn.execute(text(query))
+                    except Exception as e:
+                        raise QueryError(f"Error executing query: {str(e)}") from e
+
+            result = await loop.run_in_executor(None, _execute_sync)
+            return result
+
+    async def run_inspector_operation(self, db_label: str, operation_func):
+        engine = self.get_engine(db_label)
+
+        if isinstance(engine, AsyncEngine):
+            async with self.connect(db_label) as conn:
+
+                def _inspector_operation(connection):
+                    inspector = inspect(connection)
+                    return operation_func(inspector)
+
+                return await conn.run_sync(_inspector_operation)
+        else:
+            loop = asyncio.get_event_loop()
+
+            def _inspector_operation_sync():
+                with self.connect_sync(db_label) as conn:
+                    inspector = inspect(conn)
+                    return operation_func(inspector)
+
+            return await loop.run_in_executor(None, _inspector_operation_sync)
 
 
 def load_config(config_path: str) -> AppConfig:

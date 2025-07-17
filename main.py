@@ -8,6 +8,8 @@ import sys
 import os
 from typing import List, Dict
 from fastmcp import FastMCP
+from fastmcp.tools.tool import ToolResult
+from mcp.types import TextContent
 from database_manager import load_config, DatabaseManager
 import tools
 from tools.execute_query import QueryResponse
@@ -59,15 +61,23 @@ async def describe_table(
 
 
 @mcp.tool()
-async def list_tables(database: str, schema: str | None = None) -> TablesResponse:
+async def list_tables(database: str, schema: str | None = None) -> ToolResult:
     """List all tables in the specified database and optional schema"""
-    return await tools.list_tables(db_manager, database, schema)
+    result = await tools.list_tables(db_manager, database, schema)
+    return ToolResult(
+        content=[TextContent(type="text", text=str(result))],
+        structured_content=result.model_dump(),
+    )
 
 
 @mcp.tool()
-async def test_connection(database: str) -> ConnectionTestResponse:
-    """Test database connection"""
-    return await tools.test_connection(db_manager, database)
+async def test_connection(database: str) -> ToolResult:
+    """Test database connection, useful for debugging issues"""
+    result = await tools.test_connection(db_manager, database)
+    return ToolResult(
+        content=[TextContent(type="text", text=str(result))],
+        structured_content=result.model_dump(),
+    )
 
 
 if __name__ == "__main__":

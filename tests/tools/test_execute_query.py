@@ -4,8 +4,9 @@ import pytest
 from database_manager import (
     load_config,
     DatabaseManager,
+    QueryError,
 )
-from tools.execute_query import execute_query, QueryResponse, QueryError
+from tools.execute_query import execute_query, QueryResponse
 
 
 @pytest.fixture

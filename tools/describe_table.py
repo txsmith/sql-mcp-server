@@ -1,5 +1,4 @@
 from typing import Any, List
-from sqlalchemy import inspect
 from pydantic import BaseModel
 from database_manager import DatabaseManager
 
@@ -133,25 +132,21 @@ async def describe_table(
 ) -> TableDescription:
     """Get table structure including columns and foreign keys"""
 
-    async with db_manager.connect(database) as conn:
+    def _describe_table_operation(inspector):
+        _check_table_exists(inspector, table_name, db_schema, database)
 
-        def sync_describe(connection):
-            inspector = inspect(connection)
+        columns = _get_columns(inspector, table_name, db_schema, database)
+        foreign_keys = _get_foreign_keys(inspector, table_name, db_schema, database)
+        incoming_fks = _get_incoming_foreign_keys(
+            inspector, table_name, db_schema, database
+        )
 
-            _check_table_exists(inspector, table_name, db_schema, database)
+        table_ref = f"{db_schema}.{table_name}" if db_schema else table_name
+        return TableDescription(
+            table=table_ref,
+            columns=columns,
+            foreign_keys=foreign_keys,
+            incoming_foreign_keys=incoming_fks,
+        )
 
-            columns = _get_columns(inspector, table_name, db_schema, database)
-            foreign_keys = _get_foreign_keys(inspector, table_name, db_schema, database)
-            incoming_fks = _get_incoming_foreign_keys(
-                inspector, table_name, db_schema, database
-            )
-
-            table_ref = f"{db_schema}.{table_name}" if db_schema else table_name
-            return TableDescription(
-                table=table_ref,
-                columns=columns,
-                foreign_keys=foreign_keys,
-                incoming_foreign_keys=incoming_fks,
-            )
-
-        return await conn.run_sync(sync_describe)
+    return await db_manager.run_inspector_operation(database, _describe_table_operation)

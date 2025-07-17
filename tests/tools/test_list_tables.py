@@ -29,11 +29,8 @@ async def test_list_tables_chinook_database(db_manager):
     assert len(result.schemas) > 0
 
     all_tables = []
-    total_count = 0
     for schema in result.schemas:
         all_tables.extend(schema.tables)
-        total_count += schema.table_count
-        assert schema.table_count == len(schema.tables)
 
     expected_tables = [
         "Album",
@@ -71,7 +68,6 @@ async def test_list_tables_with_specific_schema(db_manager):
     assert len(result.schemas) == 1
     assert result.schemas[0].db_schema == "main"
     assert len(result.schemas[0].tables) > 0
-    assert result.schemas[0].table_count == len(result.schemas[0].tables)
 
 
 async def test_list_tables_nonexistent_schema(db_manager):
