@@ -18,7 +18,7 @@ async def sample_table(
     db_manager: DatabaseManager,
     database: str,
     table_name: str,
-    db_schema: str | None,
+    db_schema: str | None = None,
 ) -> SampleResponse:
     sample_size = db_manager.config.settings.get("sample_size", 10)
 

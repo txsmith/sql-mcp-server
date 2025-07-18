@@ -54,16 +54,24 @@ async def sample_table(
 
 @mcp.tool()
 async def describe_table(
-    database: str, table_name: str, db_schema: str | None = None
+    database: str,
+    table_name: str,
+    db_schema: str | None = None,
+    limit: int = 250,
+    page: int = 1,
 ) -> TableDescription:
-    """Get table structure including columns and foreign keys"""
-    return await tools.describe_table(db_manager, database, table_name, db_schema)
+    """Get table structure including columns and foreign keys with pagination"""
+    return await tools.describe_table(
+        db_manager, database, table_name, db_schema, limit, page
+    )
 
 
 @mcp.tool()
-async def list_tables(database: str, schema: str | None = None) -> ToolResult:
+async def list_tables(
+    database: str, schema: str | None = None, limit: int = 500, page: int = 1
+) -> ToolResult:
     """List all tables in the specified database and optional schema"""
-    result = await tools.list_tables(db_manager, database, schema)
+    result = await tools.list_tables(db_manager, database, limit, page, schema)
     return ToolResult(
         content=[TextContent(type="text", text=str(result))],
         structured_content=result.model_dump(),

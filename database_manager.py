@@ -178,6 +178,11 @@ class DatabaseManager:
     def get_database_config(self, db_name: str) -> DatabaseConfig | None:
         return self.config.databases.get(db_name)
 
+    def get_dialect_name(self, db_label: str) -> str:
+        """Get the dialect name from the engine for the given database"""
+        engine = self.get_engine(db_label)
+        return engine.dialect.name.lower()
+
     @asynccontextmanager
     async def connect(self, db_label: str):
         """Async connection context manager for async engines"""
@@ -245,27 +250,6 @@ class DatabaseManager:
 
             result = await loop.run_in_executor(None, _execute_sync)
             return result
-
-    async def run_inspector_operation(self, db_label: str, operation_func):
-        engine = self.get_engine(db_label)
-
-        if isinstance(engine, AsyncEngine):
-            async with self.connect(db_label) as conn:
-
-                def _inspector_operation(connection):
-                    inspector = inspect(connection)
-                    return operation_func(inspector)
-
-                return await conn.run_sync(_inspector_operation)
-        else:
-            loop = asyncio.get_event_loop()
-
-            def _inspector_operation_sync():
-                with self.connect_sync(db_label) as conn:
-                    inspector = inspect(conn)
-                    return operation_func(inspector)
-
-            return await loop.run_in_executor(None, _inspector_operation_sync)
 
 
 def load_config(config_path: str) -> AppConfig:

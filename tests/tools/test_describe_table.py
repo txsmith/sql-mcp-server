@@ -102,3 +102,54 @@ async def test_describe_table_column_types_and_nullability(db_manager):
 
     assert isinstance(track_id_col.type, str)
     assert isinstance(name_col.type, str)
+
+
+async def test_describe_table_pagination_fields(db_manager):
+    """Test that describe_table returns pagination fields correctly"""
+    result = await describe_table(
+        db_manager, "chinook_sqlite", "Track", limit=5, page=1
+    )
+
+    assert isinstance(result, TableDescription)
+    assert result.current_page == 1
+    assert result.total_count > 0
+    assert result.total_pages > 0
+    assert len(result.columns) <= 5
+
+
+async def test_describe_table_pagination_limit_validation(db_manager):
+    """Test that describe_table validates pagination parameters"""
+    from tools.describe_table import DescribeTableError
+
+    with pytest.raises(DescribeTableError, match="Limit must be greater than 0"):
+        await describe_table(db_manager, "chinook_sqlite", "Track", limit=0)
+
+    with pytest.raises(DescribeTableError, match="Page number must be greater than 0"):
+        await describe_table(db_manager, "chinook_sqlite", "Track", page=0)
+
+
+async def test_describe_table_pagination_second_page(db_manager):
+    """Test that describe_table pagination works for second page"""
+    result_page1 = await describe_table(
+        db_manager, "chinook_sqlite", "Track", limit=3, page=1
+    )
+    result_page2 = await describe_table(
+        db_manager, "chinook_sqlite", "Track", limit=3, page=2
+    )
+
+    assert result_page1.current_page == 1
+    assert result_page2.current_page == 2
+    assert result_page1.total_count == result_page2.total_count
+    assert result_page1.total_pages == result_page2.total_pages
+
+    # Make sure we get different items (at least some should be different)
+    page1_items = [col.name for col in result_page1.columns] + [
+        fk.referred_table for fk in result_page1.foreign_keys
+    ]
+    page2_items = [col.name for col in result_page2.columns] + [
+        fk.referred_table for fk in result_page2.foreign_keys
+    ]
+
+    # Pages should be different
+    if result_page1.total_count > 3:
+        assert page1_items != page2_items
